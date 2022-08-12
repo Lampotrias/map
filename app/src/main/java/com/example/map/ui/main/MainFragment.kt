@@ -18,6 +18,9 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.compass.CompassOverlay
+import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
+import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
 class MainFragment : Fragment() {
 
@@ -29,9 +32,7 @@ class MainFragment : Fragment() {
 	private lateinit var currentPositionMarker: Marker
 
 	private val requestPermissionLauncher =
-		registerForActivityResult(
-			ActivityResultContracts.RequestMultiplePermissions()
-		) { resultMap ->
+		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
 			val deniedPerms = resultMap.filter { entry -> entry.value == false }
 			if (deniedPerms.isEmpty()) {
 				initMap()
@@ -53,6 +54,18 @@ class MainFragment : Fragment() {
 			setMultiTouchControls(true)
 			controller.setZoom(18.0)
 		}
+
+		val mRotationGestureOverlay = RotationGestureOverlay(binding.map)
+		mRotationGestureOverlay.isEnabled = true
+		binding.map.overlays.add(mRotationGestureOverlay)
+
+		val mCompassOverlay =
+			CompassOverlay(context, InternalCompassOrientationProvider(context), binding.map)
+		mCompassOverlay.enableCompass()
+		binding.map.overlays.add(mCompassOverlay)
+
+
+		binding.map.invalidate()
 
 		locationClient.lastLocation.observe(this) { location ->
 			GeoPoint(location).also {
