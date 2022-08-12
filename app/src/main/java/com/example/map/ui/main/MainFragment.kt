@@ -2,6 +2,7 @@ package com.example.map.ui.main
 
 import android.Manifest
 import android.app.AlertDialog
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,14 +16,23 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.map.R
 import com.example.map.databinding.FragmentMainBinding
 import com.example.map.location.LocationClient
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import org.osmdroid.bonuspack.routing.OSRMRoadManager
+import org.osmdroid.bonuspack.routing.RoadManager
 import org.osmdroid.config.Configuration
+import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
+@OptIn(DelicateCoroutinesApi::class)
 class MainFragment : Fragment() {
 
 	private lateinit var viewModel: MainViewModel
@@ -31,6 +41,7 @@ class MainFragment : Fragment() {
 
 	private lateinit var locationClient: LocationClient
 	private lateinit var currentPositionMarker: Marker
+	private var roadOverlay: Overlay? = null
 
 	private val requestPermissionLauncher =
 		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
@@ -102,6 +113,58 @@ class MainFragment : Fragment() {
 		binding.btnMyLocation.setOnClickListener {
 			locationClient.getCurrentLocation()
 		}
+
+		val mapEventOverlay = MapEventsOverlay(object : MapEventsReceiver {
+			override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
+				Marker(binding.map).apply {
+					setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+					position = p
+					title = "$p"
+				}.also {
+					binding.map.overlays.add(it)
+					binding.map.invalidate()
+				}
+
+				return true
+			}
+
+			override fun longPressHelper(p: GeoPoint): Boolean {
+				activity?.let {
+					AlertDialog.Builder(it).apply {
+						setMessage("Need create new route?")
+						setPositiveButton("Ok") { _, _ ->
+							GlobalScope.launch { createRouteTo(p) }
+						}
+						setNegativeButton("cancel") { dialogInterface, _ ->
+							dialogInterface.dismiss()
+						}
+					}
+				}?.also {
+					it.show()
+				}
+
+				return true
+			}
+		})
+
+		binding.map.overlays.add(mapEventOverlay)
+		binding.map.invalidate()
+	}
+
+	@Suppress("RedundantSuspendModifier")
+	private suspend fun createRouteTo(targetPoint: GeoPoint) {
+		val roadManager: RoadManager = OSRMRoadManager(requireContext(), "adasd")
+
+		val waypoints = ArrayList<GeoPoint>()
+		waypoints.add(currentPositionMarker.position)
+		waypoints.add(targetPoint)
+
+		val road = roadManager.getRoad(waypoints)
+
+		roadOverlay?.let { binding.map.overlays.remove(it) }
+		roadOverlay = RoadManager.buildRoadOverlay(road, Color.BLUE, 10f)
+		binding.map.overlays.add(roadOverlay)
+		binding.map.invalidate()
 	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
