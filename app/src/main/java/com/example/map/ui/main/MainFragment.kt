@@ -14,13 +14,16 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.map.R
+import com.example.map.data.PlaceProvider
 import com.example.map.databinding.FragmentMainBinding
 import com.example.map.location.LocationClient
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
 import org.osmdroid.bonuspack.routing.RoadManager
+import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -45,7 +48,7 @@ class MainFragment : Fragment() {
 
 	private val requestPermissionLauncher =
 		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
-			val deniedPerms = resultMap.filter { entry -> entry.value == false }
+			val deniedPerms = resultMap.filter { entry -> !entry.value }
 			if (deniedPerms.isEmpty()) {
 				initMap()
 			} else {
@@ -147,8 +150,31 @@ class MainFragment : Fragment() {
 			}
 		})
 
-		binding.map.overlays.add(mapEventOverlay)
+//		binding.map.overlays.add(mapEventOverlay)
+
+		initPlaces()
+
 		binding.map.invalidate()
+	}
+
+	private fun initPlaces() {
+		val poiMarkers = RadiusMarkerClusterer(requireContext())
+		val clusterIcon =
+			BonusPackHelper.getBitmapFromVectorDrawable(
+				requireContext(),
+				org.osmdroid.bonuspack.R.drawable.marker_cluster
+			)
+		poiMarkers.setIcon(clusterIcon)
+		binding.map.overlays.add(poiMarkers)
+
+		PlaceProvider.places.map {
+			Marker(binding.map).apply {
+				position = GeoPoint(it.l, it.w)
+				title = it.title
+			}.also {
+				poiMarkers.add(it)
+			}
+		}
 	}
 
 	@Suppress("RedundantSuspendModifier")
