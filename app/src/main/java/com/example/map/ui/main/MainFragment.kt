@@ -3,6 +3,7 @@ package com.example.map.ui.main
 import android.Manifest
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -14,12 +15,12 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.map.R
+import com.example.map.data.MyMarker
 import com.example.map.data.PlaceProvider
 import com.example.map.databinding.FragmentMainBinding
 import com.example.map.location.LocationClient
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
+import com.example.map.tools.FrescoTools
+import kotlinx.coroutines.*
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
 import org.osmdroid.bonuspack.routing.RoadManager
@@ -168,9 +169,21 @@ class MainFragment : Fragment() {
 		binding.map.overlays.add(poiMarkers)
 
 		PlaceProvider.places.map {
-			Marker(binding.map).apply {
+			MyMarker(binding.map).apply {
 				position = GeoPoint(it.l, it.w)
 				title = it.title
+				setOnMarkerClickListener { marker, _ ->
+					GlobalScope.launch {
+						FrescoTools.fetchBitmap(it.imageUrl)?.let { bitmap ->
+							marker.image = BitmapDrawable(this@MainFragment.resources, bitmap)
+							withContext(Dispatchers.Main) {
+								marker.showInfoWindow()
+							}
+						}
+					}
+					return@setOnMarkerClickListener false
+				}
+
 			}.also {
 				poiMarkers.add(it)
 			}
