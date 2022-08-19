@@ -3,7 +3,6 @@ package com.example.map.ui.main
 import android.Manifest
 import android.app.AlertDialog
 import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -19,7 +18,7 @@ import com.example.map.data.MyMarker
 import com.example.map.data.PlaceProvider
 import com.example.map.databinding.FragmentMainBinding
 import com.example.map.location.LocationClient
-import com.example.map.tools.FrescoTools
+import com.facebook.drawee.view.SimpleDraweeView
 import kotlinx.coroutines.*
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
@@ -29,6 +28,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.overlay.IconOverlay.ANCHOR_CENTER
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
@@ -172,13 +172,19 @@ class MainFragment : Fragment() {
 			MyMarker(binding.map).apply {
 				position = GeoPoint(it.l, it.w)
 				title = it.title
-				setOnMarkerClickListener { marker, _ ->
+				setOnMarkerClickListener { marker, mapView ->
 					GlobalScope.launch {
-						FrescoTools.fetchBitmap(it.imageUrl)?.let { bitmap ->
-							marker.image = BitmapDrawable(this@MainFragment.resources, bitmap)
-							withContext(Dispatchers.Main) {
-								marker.showInfoWindow()
-							}
+						withContext(Dispatchers.Main) {
+							val myCustomInfoWindow = CustomInfoView(mapView)
+							setInfoWindowAnchor(ANCHOR_CENTER, ANCHOR_CENTER)
+							myCustomInfoWindow.view.findViewById<SimpleDraweeView>(R.id.drawee_image)
+								.apply {
+									if (it.imageUrl.isNotEmpty()) {
+										setImageURI(it.imageUrl)
+									}
+								}
+							marker.setInfoWindow(myCustomInfoWindow)
+							marker.showInfoWindow()
 						}
 					}
 					return@setOnMarkerClickListener false
