@@ -38,10 +38,6 @@
 				android:value=""
 				/>
 		</activity>
-		<activity
-			android:name=".Old2Activity"
-			android:exported="true"
-			/>
 	</application>
 
 </manifest>
