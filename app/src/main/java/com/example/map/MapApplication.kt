@@ -5,10 +5,12 @@ import com.facebook.cache.disk.DiskCacheConfig
 import com.facebook.common.util.ByteConstants
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFactory
+import dagger.hilt.android.HiltAndroidApp
 import okhttp3.OkHttpClient
 import org.apache.http.conn.ssl.SSLSocketFactory
 import java.util.concurrent.TimeUnit
 
+@HiltAndroidApp
 class MapApplication : Application() {
 	override fun onCreate() {
 		super.onCreate()
