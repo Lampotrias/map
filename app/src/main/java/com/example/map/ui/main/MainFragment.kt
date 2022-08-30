@@ -3,6 +3,7 @@ package com.example.map.ui.main
 import android.Manifest
 import android.app.AlertDialog
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,14 +14,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.map.R
 import com.example.map.data.MyMarker
 import com.example.map.data.PlaceProvider
 import com.example.map.databinding.FragmentMainBinding
 import com.example.map.location.LocationClient
 import com.facebook.drawee.view.SimpleDraweeView
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.stateIn
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
 import org.osmdroid.bonuspack.routing.RoadManager
@@ -38,9 +44,11 @@ import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 
 @OptIn(DelicateCoroutinesApi::class)
+@AndroidEntryPoint
 class MainFragment : Fragment() {
 
-	private lateinit var viewModel: MainViewModel
+	private val viewModel by viewModels<MainViewModel>()
+
 	private var _binding: FragmentMainBinding? = null
 	private val binding get() = _binding!!
 
@@ -111,7 +119,6 @@ class MainFragment : Fragment() {
 					Toast.makeText(requireContext(), it.message, Toast.LENGTH_SHORT).show()
 				}
 			)
-
 		}
 
 		binding.btnMyLocation.visibility = View.VISIBLE
@@ -156,7 +163,55 @@ class MainFragment : Fragment() {
 
 		initPlaces()
 
+		binding.trackStatus.setBackgroundColor(Color.RED)
+
 		binding.map.invalidate()
+		viewLifecycleOwner.lifecycleScope.launch {
+			// repeatOnLifecycle launches the block in a new coroutine every time the
+			// lifecycle is in the STARTED state (or above) and cancels it when it's STOPPED.
+			viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+				// Trigger the flow and start listening for values.
+				// This happens when lifecycle is STARTED and stops
+				// collecting when the lifecycle is STOPPED
+				viewModel.receivingLocationUpdates.collect { enabled ->
+					if (enabled) {
+						binding.trackStatus.setBackgroundColor(Color.GREEN)
+					} else {
+						binding.trackStatus.setBackgroundColor(Color.RED)
+					}
+				}
+			}
+
+			viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+				// Trigger the flow and start listening for values.
+				// This happens when lifecycle is STARTED and stops
+				// collecting when the lifecycle is STOPPED
+				viewModel.locationList.stateIn(viewLifecycleOwner.lifecycleScope)
+					.collect { locations ->
+						locations.firstOrNull()?.let { newPoint ->
+							GeoPoint(newPoint.latitude, newPoint.longitude).also {
+								binding.map.controller.setCenter(it)
+								currentPositionMarker.position = it
+								requireActivity().runOnUiThread {
+									Toast.makeText(
+										requireContext(),
+										newPoint.toString(),
+										Toast.LENGTH_SHORT
+									).show()
+								}
+							}
+							binding.map.invalidate()
+						}
+					}
+			}
+		}
+		binding.trackStatus.setOnClickListener {
+			if ((it.background as? ColorDrawable)?.color == Color.GREEN) {
+				viewModel.stopLocationUpdates()
+			} else {
+				viewModel.startLocationUpdates()
+			}
+		}
 	}
 
 	private fun initPlaces() {
@@ -218,8 +273,6 @@ class MainFragment : Fragment() {
 		super.onCreate(savedInstanceState)
 
 		locationClient = LocationClient(requireContext())
-
-		viewModel = ViewModelProvider(this)[MainViewModel::class.java]
 	}
 
 	override fun onCreateView(

@@ -33,4 +33,13 @@
 		tools:visibility="visible"
 		/>
 
+	<View
+		android:id="@+id/track_status"
+		android:layout_width="50dp"
+		android:layout_height="50dp"
+		android:layout_margin="20dp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
