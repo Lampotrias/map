@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-	namespace 'com.example.map'
+	namespace 'com.lampotrias.map'
 	compileSdk 33
 
 	defaultConfig {
-		applicationId "com.example.map"
+		applicationId "com.lampotrias.map"
 		minSdk 24
 		targetSdk 33
 		versionCode 1
