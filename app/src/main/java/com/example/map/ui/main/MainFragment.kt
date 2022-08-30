@@ -173,36 +173,36 @@ class MainFragment : Fragment() {
 				// Trigger the flow and start listening for values.
 				// This happens when lifecycle is STARTED and stops
 				// collecting when the lifecycle is STOPPED
-				viewModel.receivingLocationUpdates.collect { enabled ->
-					if (enabled) {
-						binding.trackStatus.setBackgroundColor(Color.GREEN)
-					} else {
-						binding.trackStatus.setBackgroundColor(Color.RED)
-					}
-				}
-			}
 
-			viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-				// Trigger the flow and start listening for values.
-				// This happens when lifecycle is STARTED and stops
-				// collecting when the lifecycle is STOPPED
-				viewModel.locationList.stateIn(viewLifecycleOwner.lifecycleScope)
-					.collect { locations ->
-						locations.firstOrNull()?.let { newPoint ->
-							GeoPoint(newPoint.latitude, newPoint.longitude).also {
-								binding.map.controller.setCenter(it)
-								currentPositionMarker.position = it
-								requireActivity().runOnUiThread {
-									Toast.makeText(
-										requireContext(),
-										newPoint.toString(),
-										Toast.LENGTH_SHORT
-									).show()
-								}
-							}
-							binding.map.invalidate()
+				launch {
+					viewModel.receivingLocationUpdates.collect { enabled ->
+						if (enabled) {
+							binding.trackStatus.setBackgroundColor(Color.GREEN)
+						} else {
+							binding.trackStatus.setBackgroundColor(Color.RED)
 						}
 					}
+				}
+
+				launch {
+					viewModel.locationList.stateIn(viewLifecycleOwner.lifecycleScope)
+						.collect { locations ->
+							locations.firstOrNull()?.let { newPoint ->
+								GeoPoint(newPoint.latitude, newPoint.longitude).also {
+									binding.map.controller.setCenter(it)
+									currentPositionMarker.position = it
+									requireActivity().runOnUiThread {
+										Toast.makeText(
+											requireContext(),
+											newPoint.toString(),
+											Toast.LENGTH_SHORT
+										).show()
+									}
+								}
+								binding.map.invalidate()
+							}
+						}
+				}
 			}
 		}
 		binding.trackStatus.setOnClickListener {
