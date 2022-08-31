@@ -13,8 +13,8 @@ import com.google.android.gms.location.Priority
 class LocationClient(context: Context) {
 	private val fusedLocationClient = FusedLocationProviderClient(context)
 
-	private val _lastLocation = MutableLiveData<Result<Location>>()
-	val lastLocation: LiveData<Result<Location>> = _lastLocation
+	private val _lastLocation = MutableLiveData<Result<Location?>>()
+	val lastLocation: LiveData<Result<Location?>> = _lastLocation
 
 	private val _currentLocation = MutableLiveData<Result<Location>>()
 	val currentLocation: LiveData<Result<Location>> = _currentLocation

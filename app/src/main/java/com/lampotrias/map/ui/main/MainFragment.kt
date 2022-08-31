@@ -95,6 +95,10 @@ class MainFragment : Fragment() {
 		locationClient.lastLocation.observe(this) { result ->
 			result.fold(
 				{ location ->
+					if (location == null) {
+						return@observe
+					}
+
 					GeoPoint(location).also {
 						binding.map.controller.setCenter(it)
 						currentPositionMarker.position = it
@@ -113,7 +117,11 @@ class MainFragment : Fragment() {
 					GeoPoint(location).also {
 						binding.map.controller.animateTo(it)
 						binding.map.controller.setZoom(18.0)
+						binding.map.controller.setCenter(it)
+						currentPositionMarker.position = it
 					}
+
+					binding.map.invalidate()
 				},
 				{
 					Toast.makeText(requireContext(), it.message, Toast.LENGTH_SHORT).show()
