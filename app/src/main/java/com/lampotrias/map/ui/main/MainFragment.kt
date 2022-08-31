@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -58,6 +59,7 @@ class MainFragment : Fragment() {
 
 	private val requestPermissionLauncher =
 		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
+			Log.e("adadasda", resultMap.toString())
 			val deniedPerms = resultMap.filter { entry -> !entry.value }
 			if (deniedPerms.isEmpty()) {
 				initMap()
@@ -96,6 +98,8 @@ class MainFragment : Fragment() {
 			result.fold(
 				{ location ->
 					if (location == null) {
+						Toast.makeText(requireContext(), "Location is null", Toast.LENGTH_SHORT)
+							.show()
 						return@observe
 					}
 
@@ -114,6 +118,12 @@ class MainFragment : Fragment() {
 		locationClient.currentLocation.observe(this) { result ->
 			result.fold(
 				{ location ->
+					if (location == null) {
+						Toast.makeText(requireContext(), "Location is null", Toast.LENGTH_SHORT)
+							.show()
+						return@observe
+					}
+
 					GeoPoint(location).also {
 						binding.map.controller.animateTo(it)
 						binding.map.controller.setZoom(18.0)
@@ -220,6 +230,7 @@ class MainFragment : Fragment() {
 				viewModel.startLocationUpdates()
 			}
 		}
+		locationClient.getLastLocation()
 	}
 
 	private fun initPlaces() {
@@ -291,6 +302,7 @@ class MainFragment : Fragment() {
 
 		val perms = mutableListOf(
 			Manifest.permission.ACCESS_FINE_LOCATION,
+			Manifest.permission.ACCESS_COARSE_LOCATION,
 			Manifest.permission.ACCESS_NETWORK_STATE,
 			Manifest.permission.INTERNET
 		)

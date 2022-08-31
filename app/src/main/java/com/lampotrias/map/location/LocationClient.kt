@@ -16,10 +16,10 @@ class LocationClient(context: Context) {
 	private val _lastLocation = MutableLiveData<Result<Location?>>()
 	val lastLocation: LiveData<Result<Location?>> = _lastLocation
 
-	private val _currentLocation = MutableLiveData<Result<Location>>()
-	val currentLocation: LiveData<Result<Location>> = _currentLocation
+	private val _currentLocation = MutableLiveData<Result<Location?>>()
+	val currentLocation: LiveData<Result<Location?>> = _currentLocation
 
-	init {
+	fun getLastLocation() {
 		fusedLocationClient.lastLocation.addOnSuccessListener { location ->
 			Log.e("Mapss", "Last location: $location")
 			_lastLocation.value = Result.success(location)
