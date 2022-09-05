@@ -55,7 +55,7 @@ class MainFragment : Fragment() {
 
 	private lateinit var locationClient: LocationClient
 	private lateinit var currentPositionMarker: Marker
-	private var roadOverlay: Overlay? = null
+	private var currentRoad: CurrentRoute? = null
 
 	private val requestPermissionLauncher =
 		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
@@ -146,16 +146,16 @@ class MainFragment : Fragment() {
 
 		val mapEventOverlay = MapEventsOverlay(object : MapEventsReceiver {
 			override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-				Marker(binding.map).apply {
-					setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-					position = p
-					title = "$p"
-				}.also {
-					binding.map.overlays.add(it)
-					binding.map.invalidate()
-				}
+//				Marker(binding.map).apply {
+//					setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+//					position = p
+//					title = "$p"
+//				}.also {
+//					binding.map.overlays.add(it)
+//					binding.map.invalidate()
+//				}
 
-				return true
+				return false
 			}
 
 			override fun longPressHelper(p: GeoPoint): Boolean {
@@ -177,7 +177,7 @@ class MainFragment : Fragment() {
 			}
 		})
 
-//		binding.map.overlays.add(mapEventOverlay)
+		binding.map.overlays.add(mapEventOverlay)
 
 		initPlaces()
 
@@ -282,11 +282,34 @@ class MainFragment : Fragment() {
 
 		val road = roadManager.getRoad(waypoints)
 
-		roadOverlay?.let { binding.map.overlays.remove(it) }
-		roadOverlay = RoadManager.buildRoadOverlay(road, Color.BLUE, 10f)
-		binding.map.overlays.add(roadOverlay)
+		currentRoad?.let {
+			binding.map.overlays.remove(it.routeOverlay)
+			binding.map.overlays.removeAll(it.points)
+		}
+
+		val points: List<Marker> = road.mNodes.map {
+			val marker = Marker(binding.map).apply {
+				setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+				position = it.mLocation
+				image = ContextCompat.getDrawable(requireContext(), R.drawable.ic_cluster)
+			}
+			marker
+		}
+
+		currentRoad = CurrentRoute(
+			RoadManager.buildRoadOverlay(road, Color.BLUE, 20f),
+			points
+		)
+
+		binding.map.overlays.add(currentRoad!!.routeOverlay)
+		binding.map.overlays.addAll(points)
 		binding.map.invalidate()
 	}
+
+	data class CurrentRoute(
+		val routeOverlay: Overlay,
+		val points: List<Marker>
+	)
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
