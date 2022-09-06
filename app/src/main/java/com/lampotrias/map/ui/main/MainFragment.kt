@@ -93,17 +93,49 @@ class MainFragment : Fragment() {
 			controller.setZoom(18.0)
 		}
 
-		val mRotationGestureOverlay = RotationGestureOverlay(binding.map)
-		mRotationGestureOverlay.isEnabled = true
-		binding.map.overlays.add(mRotationGestureOverlay)
+		enableRotationMap()
+		enableCompass()
 
+		enableMyLocation()
+
+		enableGestureClicks()
+		initPlaces()
+
+		enableTrackStatus()
+
+		binding.map.invalidate()
+
+		subscribeEvents()
+
+		locationClient.getLastLocation()
+	}
+
+	private fun enableMyLocation() {
+		binding.btnMyLocation.visibility = View.VISIBLE
+		binding.btnMyLocation.setOnClickListener {
+			locationClient.getCurrentLocation()
+		}
+	}
+
+	private fun enableTrackStatus() {
+		binding.trackStatus.setBackgroundColor(Color.RED)
+		binding.trackStatus.setOnClickListener {
+			if ((it.background as? ColorDrawable)?.color == Color.GREEN) {
+				viewModel.stopLocationUpdates()
+			} else {
+				viewModel.startLocationUpdates()
+			}
+		}
+	}
+
+	private fun enableCompass() {
 		val mCompassOverlay =
 			CompassOverlay(context, InternalCompassOrientationProvider(context), binding.map)
 		mCompassOverlay.enableCompass()
 		binding.map.overlays.add(mCompassOverlay)
+	}
 
-
-		binding.map.invalidate()
+	private fun subscribeEvents() {
 
 		locationClient.lastLocation.observe(this) { result ->
 			result.fold(
@@ -150,51 +182,6 @@ class MainFragment : Fragment() {
 			)
 		}
 
-		binding.btnMyLocation.visibility = View.VISIBLE
-		binding.btnMyLocation.setOnClickListener {
-			locationClient.getCurrentLocation()
-		}
-
-		val mapEventOverlay = MapEventsOverlay(object : MapEventsReceiver {
-			override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
-//				Marker(binding.map).apply {
-//					setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-//					position = p
-//					title = "$p"
-//				}.also {
-//					binding.map.overlays.add(it)
-//					binding.map.invalidate()
-//				}
-
-				return false
-			}
-
-			override fun longPressHelper(p: GeoPoint): Boolean {
-				activity?.let {
-					AlertDialog.Builder(it).apply {
-						setMessage("Need create new route?")
-						setPositiveButton("Ok") { _, _ ->
-							GlobalScope.launch { createRouteTo(p) }
-						}
-						setNegativeButton("cancel") { dialogInterface, _ ->
-							dialogInterface.dismiss()
-						}
-					}
-				}?.also {
-					it.show()
-				}
-
-				return true
-			}
-		})
-
-		binding.map.overlays.add(mapEventOverlay)
-
-		initPlaces()
-
-		binding.trackStatus.setBackgroundColor(Color.RED)
-
-		binding.map.invalidate()
 		viewLifecycleOwner.lifecycleScope.launch {
 			// repeatOnLifecycle launches the block in a new coroutine every time the
 			// lifecycle is in the STARTED state (or above) and cancels it when it's STOPPED.
@@ -234,14 +221,48 @@ class MainFragment : Fragment() {
 				}
 			}
 		}
-		binding.trackStatus.setOnClickListener {
-			if ((it.background as? ColorDrawable)?.color == Color.GREEN) {
-				viewModel.stopLocationUpdates()
-			} else {
-				viewModel.startLocationUpdates()
+	}
+
+	private fun enableGestureClicks() {
+		val mapEventOverlay = MapEventsOverlay(object : MapEventsReceiver {
+			override fun singleTapConfirmedHelper(p: GeoPoint): Boolean {
+//				Marker(binding.map).apply {
+//					setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+//					position = p
+//					title = "$p"
+//				}.also {
+//					binding.map.overlays.add(it)
+//					binding.map.invalidate()
+//				}
+
+				return false
 			}
-		}
-		locationClient.getLastLocation()
+
+			override fun longPressHelper(p: GeoPoint): Boolean {
+				activity?.let {
+					AlertDialog.Builder(it).apply {
+						setMessage("Need create new route?")
+						setPositiveButton("Ok") { _, _ ->
+							GlobalScope.launch { createRouteTo(p) }
+						}
+						setNegativeButton("cancel") { dialogInterface, _ ->
+							dialogInterface.dismiss()
+						}
+					}
+				}?.also {
+					it.show()
+				}
+
+				return true
+			}
+		})
+		binding.map.overlays.add(mapEventOverlay)
+	}
+
+	private fun enableRotationMap() {
+		val mRotationGestureOverlay = RotationGestureOverlay(binding.map)
+		mRotationGestureOverlay.isEnabled = true
+		binding.map.overlays.add(mRotationGestureOverlay)
 	}
 
 	private fun initPlaces() {
