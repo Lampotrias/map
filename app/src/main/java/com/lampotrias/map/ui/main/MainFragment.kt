@@ -36,6 +36,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
+import org.osmdroid.views.MapView.getTileSystem
 import org.osmdroid.views.overlay.IconOverlay.ANCHOR_CENTER
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
@@ -77,8 +78,18 @@ class MainFragment : Fragment() {
 	private fun initMap() {
 		Configuration.getInstance().userAgentValue = "asdas"
 		with(binding.map) {
+//			overlayManager.tilesOverlay.setColorFilter(TilesOverlay.INVERT_COLORS);
 			setTileSource(TileSourceFactory.MAPNIK)
 			setMultiTouchControls(true)
+			isTilesScaledToDpi = true
+			minZoomLevel = 2.0
+			maxZoomLevel = 21.0
+			isVerticalMapRepetitionEnabled = false
+			setScrollableAreaLimitLatitude(
+				getTileSystem().maxLatitude,
+				-getTileSystem().maxLatitude,
+				0
+			)
 			controller.setZoom(18.0)
 		}
 
