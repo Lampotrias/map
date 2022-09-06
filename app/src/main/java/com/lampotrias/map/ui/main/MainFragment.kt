@@ -22,7 +22,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.facebook.drawee.view.SimpleDraweeView
 import com.lampotrias.map.R
 import com.lampotrias.map.data.MyMarker
-import com.lampotrias.map.data.PlaceProvider
 import com.lampotrias.map.databinding.FragmentMainBinding
 import com.lampotrias.map.location.LocationClient
 import dagger.hilt.android.AndroidEntryPoint
@@ -243,7 +242,11 @@ class MainFragment : Fragment() {
 					AlertDialog.Builder(it).apply {
 						setMessage("Need create new route?")
 						setPositiveButton("Ok") { _, _ ->
-							GlobalScope.launch { createRouteTo(p) }
+							GlobalScope.launch {
+								withContext(Dispatchers.IO) {
+									createRouteTo(p)
+								}
+							}
 						}
 						setNegativeButton("cancel") { dialogInterface, _ ->
 							dialogInterface.dismiss()
@@ -275,7 +278,7 @@ class MainFragment : Fragment() {
 		poiMarkers.setIcon(clusterIcon)
 		binding.map.overlays.add(poiMarkers)
 
-		PlaceProvider.places.map {
+		viewModel.savedItems.map {
 			MyMarker(binding.map).apply {
 				position = GeoPoint(it.l, it.w)
 				title = it.title
@@ -319,7 +322,7 @@ class MainFragment : Fragment() {
 			binding.map.overlays.removeAll(it.points)
 		}
 
-		val points: List<Marker> = road.mNodes.map {
+		val points = road.mNodes.map {
 			val marker = Marker(binding.map).apply {
 				setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
 				position = it.mLocation

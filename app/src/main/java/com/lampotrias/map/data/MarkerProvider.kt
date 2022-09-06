@@ -2,8 +2,11 @@ package com.lampotrias.map.data
 
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
+import javax.inject.Inject
+import javax.inject.Singleton
 
-object PlaceProvider {
+@Singleton
+class PlaceProvider @Inject constructor() {
 	val places = listOf(
 		Place("Часы на Рыночной площади", 55.175560, 21.545397),
 		Place("Кирха Калльнингкена", 55.159097, 21.321913),
