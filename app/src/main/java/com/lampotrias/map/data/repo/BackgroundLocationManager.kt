@@ -56,12 +56,12 @@ class BackgroundLocationManager @Inject constructor(
 		// IMPORTANT NOTE: Apps running on "O" devices (regardless of targetSdkVersion) may
 		// receive updates less frequently than this interval when the app is no longer in the
 		// foreground.
-		interval = TimeUnit.SECONDS.toMillis(10)
+		interval = TimeUnit.SECONDS.toMillis(5)
 
 		// Sets the fastest rate for active location updates. This interval is exact, and your
 		// application will never receive updates faster than this value.
-		fastestInterval = TimeUnit.SECONDS.toMillis(5)
-		smallestDisplacement = 10f
+		fastestInterval = TimeUnit.SECONDS.toMillis(2)
+		smallestDisplacement = 5f
 		// Sets the maximum time when batched location updates are delivered. Updates may be
 		// delivered sooner than this interval.
 		maxWaitTime = TimeUnit.MINUTES.toMillis(2)
