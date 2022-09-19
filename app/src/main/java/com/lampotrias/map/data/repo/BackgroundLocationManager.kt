@@ -19,16 +19,12 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.LocationSettingsRequest
-import com.google.android.gms.location.LocationSettingsStatusCodes
+import com.google.android.gms.location.*
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -56,22 +52,21 @@ class BackgroundLocationManager @Inject constructor(
 		// IMPORTANT NOTE: Apps running on "O" devices (regardless of targetSdkVersion) may
 		// receive updates less frequently than this interval when the app is no longer in the
 		// foreground.
-		interval = TimeUnit.SECONDS.toMillis(5)
+		interval = 1000
 
 		// Sets the fastest rate for active location updates. This interval is exact, and your
 		// application will never receive updates faster than this value.
-		fastestInterval = TimeUnit.SECONDS.toMillis(2)
-		smallestDisplacement = 5f
+		fastestInterval = 100
 		// Sets the maximum time when batched location updates are delivered. Updates may be
 		// delivered sooner than this interval.
-		maxWaitTime = TimeUnit.MINUTES.toMillis(2)
+		maxWaitTime = 100
 
 		// The priority of the request is a strong hint to the LocationClient for which location
 		// sources to use. For example, PRIORITY_HIGH_ACCURACY is more likely to use GPS, and
 		// PRIORITY_BALANCED_POWER_ACCURACY is more likely to use WIFI & Cell tower positioning,
 		// but it also depends on many other factors (such as which sources are available) and is
 		// implementation dependent.
-		priority = LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY
+		priority = Priority.PRIORITY_HIGH_ACCURACY
 	}
 
 	private val locationUpdatePendingIntent: PendingIntent by lazy {

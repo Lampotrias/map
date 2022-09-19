@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -24,11 +25,14 @@ import com.lampotrias.map.R
 import com.lampotrias.map.data.MyMarker
 import com.lampotrias.map.databinding.FragmentMainBinding
 import com.lampotrias.map.location.LocationClient
+import com.lampotrias.map.tools.bottomsheet.BottomSheetHelper
+import com.lampotrias.map.ui.confirmroute.BottomConfirmRouteDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.stateIn
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
+import org.osmdroid.bonuspack.routing.Road
 import org.osmdroid.bonuspack.routing.RoadManager
 import org.osmdroid.bonuspack.utils.BonusPackHelper
 import org.osmdroid.config.Configuration
@@ -56,6 +60,7 @@ class MainFragment : Fragment() {
 	private lateinit var locationClient: LocationClient
 	private lateinit var currentPositionMarker: Marker
 	private var currentRoad: CurrentRoute? = null
+	private val bottomSheetHelper = BottomSheetHelper()
 
 	private val requestPermissionLauncher =
 		registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { resultMap ->
@@ -102,6 +107,8 @@ class MainFragment : Fragment() {
 
 		enableTrackStatus()
 
+		enableLogView()
+
 		binding.map.invalidate()
 
 		subscribeEvents()
@@ -127,6 +134,21 @@ class MainFragment : Fragment() {
 		}
 	}
 
+	private fun enableLogView() {
+		binding.logView.movementMethod = ScrollingMovementMethod()
+
+		binding.logsStatus.setBackgroundColor(Color.RED)
+		binding.logsStatus.setOnClickListener {
+			if ((it.background as? ColorDrawable)?.color == Color.RED) {
+				binding.logView.visibility = View.VISIBLE
+				binding.logsStatus.setBackgroundColor(Color.GREEN)
+			} else {
+				binding.logView.visibility = View.GONE
+				binding.logsStatus.setBackgroundColor(Color.RED)
+			}
+		}
+	}
+
 	private fun enableCompass() {
 		val mCompassOverlay =
 			CompassOverlay(context, InternalCompassOrientationProvider(context), binding.map)
@@ -139,6 +161,9 @@ class MainFragment : Fragment() {
 		locationClient.lastLocation.observe(this) { result ->
 			result.fold(
 				{ location ->
+
+					appendToLog("last: $location")
+
 					if (location == null) {
 						Toast.makeText(requireContext(), "Location is null", Toast.LENGTH_SHORT)
 							.show()
@@ -160,6 +185,9 @@ class MainFragment : Fragment() {
 		locationClient.currentLocation.observe(this) { result ->
 			result.fold(
 				{ location ->
+
+					appendToLog("current: $location")
+
 					if (location == null) {
 						Toast.makeText(requireContext(), "Location is null", Toast.LENGTH_SHORT)
 							.show()
@@ -204,7 +232,7 @@ class MainFragment : Fragment() {
 						.collect { locations ->
 							locations.firstOrNull()?.let { newPoint ->
 								GeoPoint(newPoint.latitude, newPoint.longitude).also {
-									binding.map.controller.setCenter(it)
+									binding.map.controller.animateTo(it)
 									currentPositionMarker.position = it
 									requireActivity().runOnUiThread {
 										Toast.makeText(
@@ -214,6 +242,7 @@ class MainFragment : Fragment() {
 										).show()
 									}
 								}
+								appendToLog("list: $newPoint")
 								binding.map.invalidate()
 							}
 						}
@@ -307,6 +336,12 @@ class MainFragment : Fragment() {
 		}
 	}
 
+	private fun appendToLog(message: String) {
+		requireActivity().runOnUiThread {
+			binding.logView.append("$message \n")
+		}
+	}
+
 	@Suppress("RedundantSuspendModifier")
 	private suspend fun createRouteTo(targetPoint: GeoPoint) {
 		val roadManager: RoadManager = OSRMRoadManager(requireContext(), "adasd")
@@ -332,16 +367,22 @@ class MainFragment : Fragment() {
 		}
 
 		currentRoad = CurrentRoute(
+			road,
 			RoadManager.buildRoadOverlay(road, Color.BLUE, 20f),
 			points
 		)
 
 		binding.map.overlays.add(currentRoad!!.routeOverlay)
 		binding.map.overlays.addAll(points)
+
+		val newFragment = BottomConfirmRouteDialogFragment.newInstance(road)
+		bottomSheetHelper.show(parentFragmentManager, newFragment)
+
 		binding.map.invalidate()
 	}
 
 	data class CurrentRoute(
+		val road: Road,
 		val routeOverlay: Overlay,
 		val points: List<Marker>
 	)
