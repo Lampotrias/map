@@ -2,10 +2,14 @@ package com.lampotrias.map.ui.main
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.Context.LOCATION_SERVICE
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.LayoutInflater
@@ -47,6 +51,7 @@ import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+
 
 @OptIn(DelicateCoroutinesApi::class)
 @AndroidEntryPoint
@@ -413,7 +418,21 @@ class MainFragment : Fragment() {
 			perms.add(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
 		}
 
-		requestPermissionLauncher.launch(perms.toTypedArray())
+		val locationManager = requireContext().getSystemService(LOCATION_SERVICE) as LocationManager
+		if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+			requestPermissionLauncher.launch(perms.toTypedArray())
+		} else {
+			val builder = activity?.let {
+				AlertDialog.Builder(it)
+			}?.also {
+				it.setTitle("Gps provider was disabled")
+				it.setMessage("Please enable it")
+				it.setPositiveButton("Go to settings") { _, _ ->
+					requireActivity().startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+				}
+			}
+			builder?.show()
+		}
 
 		currentPositionMarker = Marker(binding.map).apply {
 			setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
