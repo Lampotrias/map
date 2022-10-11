@@ -32,8 +32,12 @@ import com.lampotrias.map.location.LocationClient
 import com.lampotrias.map.tools.bottomsheet.BottomSheetHelper
 import com.lampotrias.map.ui.confirmroute.BottomConfirmRouteDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.bonuspack.clustering.RadiusMarkerClusterer
 import org.osmdroid.bonuspack.routing.OSRMRoadManager
 import org.osmdroid.bonuspack.routing.Road
@@ -51,6 +55,7 @@ import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.compass.CompassOverlay
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import kotlin.math.roundToInt
 
 
 @OptIn(DelicateCoroutinesApi::class)
@@ -133,8 +138,10 @@ class MainFragment : Fragment() {
 		binding.trackStatus.setOnClickListener {
 			if ((it.background as? ColorDrawable)?.color == Color.GREEN) {
 				viewModel.stopLocationUpdates()
+				viewModel.stopSpeedUpdates()
 			} else {
 				viewModel.startLocationUpdates()
+				viewModel.startSpeedUpdates()
 			}
 		}
 	}
@@ -228,7 +235,16 @@ class MainFragment : Fragment() {
 							binding.trackStatus.setBackgroundColor(Color.GREEN)
 						} else {
 							binding.trackStatus.setBackgroundColor(Color.RED)
+							binding.speedKmc.text = ""
+							binding.speedMts.text = ""
 						}
+					}
+				}
+
+				launch {
+					viewModel.speedUpdates.collect {
+						binding.speedKmc.text = "${(it * 3.6).roundToInt()} km"
+						binding.speedMts.text = "${it.roundToInt()} ms"
 					}
 				}
 
